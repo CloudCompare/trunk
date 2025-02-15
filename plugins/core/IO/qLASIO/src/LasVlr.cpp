@@ -17,6 +17,7 @@
 
 #include "LasVlr.h"
 
+#include "CopcLoader.h"
 #include "LasMetadata.h"
 
 // Qt
@@ -25,13 +26,13 @@
 #include <ccPointCloud.h>
 // System
 #include <algorithm>
-#include <cstring>
 
 LasVlr::LasVlr(const laszip_header& header)
 {
 	const auto vlrShouldBeCopied = [](const laszip_vlr_struct& vlr)
 	{
-		return !LasDetails::IsLaszipVlr(vlr) && !LasDetails::IsExtraBytesVlr(vlr);
+		// Currently, we avoid copying back the COPC VLR (due to potential modifications to the file)
+		return !LasDetails::IsLaszipVlr(vlr) && !LasDetails::IsExtraBytesVlr(vlr) && !copc::CopcLoader::IsCOPCVlr(vlr);
 	};
 
 	ptrdiff_t numVlrs = std::count_if(header.vlrs, header.vlrs + header.number_of_variable_length_records, vlrShouldBeCopied);

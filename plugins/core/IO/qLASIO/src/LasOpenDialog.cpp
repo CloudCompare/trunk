@@ -23,7 +23,11 @@
 #include <QSettings>
 #include <QStringListModel>
 
-constexpr int TILLING_TAB_INDEX = 1;
+// System
+#include <algorithm>
+
+constexpr int TILING_TAB_INDEX = 1;
+constexpr int COPC_TAB_INDEX = 2;
 
 static QListWidgetItem* CreateItem(const char* name, bool checked = true)
 {
@@ -83,19 +87,25 @@ LasOpenDialog::LasOpenDialog(QWidget* parent)
 	connect(unselectAllESFToolButton, &QPushButton::clicked, this, [&]
 	        { doSelectAllESF(false); });
 	connect(xNormalComboBox,
-	        (void (QComboBox::*)(const QString&))(&QComboBox::currentIndexChanged),
+	        (void(QComboBox::*)(const QString&))(&QComboBox::currentIndexChanged),
 	        this,
 	        &LasOpenDialog::onNormalComboBoxChanged);
 	connect(yNormalComboBox,
-	        (void (QComboBox::*)(const QString&))(&QComboBox::currentIndexChanged),
+	        (void(QComboBox::*)(const QString&))(&QComboBox::currentIndexChanged),
 	        this,
 	        &LasOpenDialog::onNormalComboBoxChanged);
 	connect(zNormalComboBox,
-	        (void (QComboBox::*)(const QString&))(&QComboBox::currentIndexChanged),
+	        (void(QComboBox::*)(const QString&))(&QComboBox::currentIndexChanged),
 	        this,
 	        &LasOpenDialog::onNormalComboBoxChanged);
 	connect(decomposeClassificationCheckBox, &QCheckBox::toggled, this, &LasOpenDialog::onDecomposeClassificationToggled);
 
+	{}
+	const auto extentSpinBoxes = copcExtentGroupBox->findChildren<QDoubleSpinBox *>();
+	for(auto extentSpinBox : extentSpinBoxes)
+	{
+		connect(extentSpinBox, (void(QDoubleSpinBox::*)(double))(&QDoubleSpinBox::valueChanged),  this, &LasOpenDialog::checkExtentConsistency);
+	}
 	// reload the last tiling output path
 	{
 		QSettings settings;
@@ -229,6 +239,61 @@ void LasOpenDialog::setAvailableScalarFields(const std::vector<LasScalarField>& 
 	}
 }
 
+void LasOpenDialog::displayCopcTab(bool visibilityState)
+{
+	actionTab->setTabVisible(COPC_TAB_INDEX, visibilityState);
+}
+
+void LasOpenDialog::setCopcInformations(const std::vector<uint64_t>& pointCountPerLevel, const LasDetails::UnscaledExtent& copcBB)
+{
+	// reset previous combo box
+	copcDepthComboBox->clear();
+	uint64_t cumulative_point_count = 0;
+	for (size_t level_id = 0; level_id < pointCountPerLevel.size(); ++level_id)
+	{
+		cumulative_point_count += pointCountPerLevel[level_id];
+		auto label = QString("level %1 (%2 points)").arg(QString::number(level_id), QString::number(cumulative_point_count));
+		copcDepthComboBox->insertItem(0, label, QVariant(static_cast<uint32_t>(level_id)));
+	}
+	copcDepthComboBox->setCurrentIndex(0);
+
+	// set extent
+	copcExtentSpinMinX->setValue(copcBB.minCorner().x);
+	copcExtentSpinMinY->setValue(copcBB.minCorner().y);
+	copcExtentSpinMinZ->setValue(copcBB.minCorner().z);
+	copcExtentSpinMaxX->setValue(copcBB.maxCorner().x);
+	copcExtentSpinMaxY->setValue(copcBB.maxCorner().y);
+	copcExtentSpinMaxZ->setValue(copcBB.maxCorner().z);
+}
+
+LasDetails::UnscaledExtent LasOpenDialog::copcExtent() const
+{
+	LasDetails::UnscaledExtent extent;
+	CCVector3d minCorner(copcExtentSpinMinX->value(), copcExtentSpinMinY->value(), copcExtentSpinMinZ->value());
+	CCVector3d maxCorner(copcExtentSpinMaxX->value(), copcExtentSpinMaxY->value(), copcExtentSpinMaxZ->value());
+	extent.add(minCorner);
+	extent.add(maxCorner);
+	return extent;
+}
+
+uint32_t LasOpenDialog::copcMaxLevel() const
+{
+	return copcDepthComboBox->currentData().toUInt();
+}
+
+bool LasOpenDialog::hasUsableExtent() const
+{
+	return copcExtentGroupBox->isChecked() && m_validExtent;
+}
+
+void LasOpenDialog::checkExtentConsistency(double value)
+{
+	m_validExtent = copcExtentSpinMaxX->value() - copcExtentSpinMinX->value() > 0 &&
+	copcExtentSpinMaxY->value() - copcExtentSpinMinY->value() > 0 &&
+	copcExtentSpinMaxZ->value() - copcExtentSpinMinZ->value() > 0;
+	copcLabelWarningExtent->setVisible(!m_validExtent);
+}
+
 void LasOpenDialog::filterOutNotChecked(std::vector<LasScalarField>&      scalarFields,
                                         std::vector<LasExtraScalarField>& extraScalarFields)
 {
@@ -331,7 +396,7 @@ void LasOpenDialog::onNormalComboBoxChanged(const QString& name)
 
 LasOpenDialog::Action LasOpenDialog::action() const
 {
-	if (actionTab->currentIndex() == TILLING_TAB_INDEX)
+	if (actionTab->currentIndex() == TILING_TAB_INDEX)
 	{
 		return Action::Tile;
 	}
@@ -397,7 +462,7 @@ void LasOpenDialog::onCurrentTabChanged(int index)
 	const static QString APPLY_TEXT     = QStringLiteral("Apply");
 	const static QString APPLY_ALL_TEXT = QStringLiteral("Apply All");
 
-	if (index == TILLING_TAB_INDEX)
+	if (index == TILING_TAB_INDEX)
 	{
 		applyButton->setText(TILE_TEXT);
 		applyAllButton->setText(TILE_ALL_TEXT);

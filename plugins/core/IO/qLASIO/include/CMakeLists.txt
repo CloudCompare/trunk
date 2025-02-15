@@ -17,6 +17,8 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_LIST_DIR}/LasVlr.h
         ${CMAKE_CURRENT_LIST_DIR}/LasSaver.h
         ${CMAKE_CURRENT_LIST_DIR}/LasWaveformSaver.h
+        ${CMAKE_CURRENT_LIST_DIR}/CopcVlrs.h
+        ${CMAKE_CURRENT_LIST_DIR}/CopcLoader.h
         )
 
 target_include_directories(${PROJECT_NAME}

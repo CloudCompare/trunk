@@ -17,7 +17,8 @@
 //#                                                                        #
 //##########################################################################
 
-// CC
+// CCCorelib
+#include <BoundingBox.h>
 #include <CCTypes.h>
 
 // Qt
@@ -25,10 +26,11 @@
 
 // System
 #include <array>
-#include <cmath>
+#include <cstdint>
 #include <limits>
-#include <string>
+
 #include <vector>
+
 
 class ccPointCloud;
 class ccScalarField;
@@ -72,6 +74,58 @@ namespace LasNames
 
 namespace LasDetails
 {
+	/// Unscaled Extent for LAS or COPC
+	///
+	/// This is an alias for a double-precision bounding box (BB) that is meant to represent:
+	/// - The unscaled extent of a LAS file (as defined in the header), or
+	/// - The unscaled bounding box of a COPC file (derived from copc::Info -> center/halfsize variables).
+	///
+	/// Note: The COPC extent is cubic, corresponding to the COPC octree shape,
+	/// rather than the bounding box of the actual points.
+	using UnscaledExtent = CCCoreLib::BoundingBoxTpl<double>;
+
+	/// LAZ Chunk but with point offset in file.
+	///
+	/// This is primarily used for COPC reading.
+	/// Since the LASZip API does not allow chunk byte seeking, we use the point offset for seeking.
+	/// This data structure can also encode the offset in the current CC point cloud,
+	/// which is useful for the LOD data structure construction.
+	/// Additionally, it includes a status field that indicates whether it should be loaded (PASS),
+	/// checked during loading (INTERSECT_BB), or pruned (FAIL).
+	struct ChunkInterval
+	{
+		enum class eFilterStatus
+		{
+			PASS         = 0,
+			INTERSECT_BB = 1,
+			FAIL         = 2,
+		};
+
+		ChunkInterval() = default;
+		ChunkInterval(uint64_t _pointOffsetInFile, uint64_t _pointCount)
+		    : pointOffsetInFile(_pointOffsetInFile)
+		    , pointCount(_pointCount){};
+
+		/// point offset in the LAZ file
+		uint64_t pointOffsetInFile{0};
+		/// point offset in the CC cloud (used for LOD construction)
+		uint64_t pointOffsetInCCCloud{0};
+		/// point count in the chunk
+		uint64_t pointCount{0};
+		/// Number of points that failed the filter pass (optional)
+		/// total point for this chunk in the ccPointCloud
+		/// should be pointCount - filteredPointCount
+		uint64_t filteredPointCount{0};
+		/// encode the status of the chunk
+		/// basically chunks with FAIL status should not be loaded.
+		eFilterStatus status{eFilterStatus::PASS};
+	};
+
+	/// the "true" number of points in a las file.
+	/// the field to query in the laszip_header in order to have the number of point
+	/// is format dependant.
+	uint64_t TrueNumberOfPoints(const laszip_header* laszipHeader);
+
 	// The position of the overlap flag in the classification flags
 	// (valid for fmt >= 6)
 	constexpr unsigned OVERLAP_FLAG_BIT_POS  = 3;
@@ -98,6 +152,8 @@ namespace LasDetails
 		static EvlrHeader Waveform();
 
 		bool isWaveFormDataPackets() const;
+
+		bool isCOPCEntry() const;
 
 		friend QDataStream& operator>>(QDataStream& stream, EvlrHeader& hdr);
 		friend QDataStream& operator<<(QDataStream& stream, const EvlrHeader& hdr);

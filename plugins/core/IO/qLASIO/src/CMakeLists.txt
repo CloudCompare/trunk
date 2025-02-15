@@ -2,6 +2,7 @@
 target_sources(${PROJECT_NAME}
         PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/LasPlugin.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/CopcLoader.cpp
         ${CMAKE_CURRENT_LIST_DIR}/LasIOFilter.cpp
         ${CMAKE_CURRENT_LIST_DIR}/LasOpenDialog.cpp
         ${CMAKE_CURRENT_LIST_DIR}/LasSaveDialog.cpp

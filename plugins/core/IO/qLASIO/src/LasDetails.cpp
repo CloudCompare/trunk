@@ -29,7 +29,6 @@
 #include <QDataStream>
 // System
 #include <cstring>
-#include <stdexcept>
 
 static const std::vector<unsigned>      PointFormatForV1_2{0, 1, 2, 3};
 static const std::vector<unsigned>      PointFormatForV1_3{0, 1, 2, 3, 4, 5};
@@ -43,6 +42,11 @@ namespace LasDetails
 		return recordID == 65'535 && strncmp(userID, "LASF_Spec", EvlrHeader::USER_ID_SIZE) == 0;
 	}
 
+	bool EvlrHeader::isCOPCEntry() const
+	{
+		return recordID == 1'000 && strncmp(userID, "copc", EvlrHeader::USER_ID_SIZE) == 0;
+	}
+
 	EvlrHeader EvlrHeader::Waveform()
 	{
 		EvlrHeader self;
@@ -51,6 +55,20 @@ namespace LasDetails
 		strncpy(self.description, "Waveform Data Packets", EvlrHeader::DESCRIPTION_SIZE);
 		self.recordLength = 0;
 		return self;
+	}
+
+	uint64_t TrueNumberOfPoints(const laszip_header* laszipHeader)
+	{
+		laszip_U64 pointCount;
+		if (laszipHeader->version_minor == 4)
+		{
+			pointCount = laszipHeader->extended_number_of_point_records;
+		}
+		else
+		{
+			pointCount = laszipHeader->number_of_point_records;
+		}
+		return pointCount;
 	}
 
 	QDataStream& operator>>(QDataStream& stream, EvlrHeader& hdr)

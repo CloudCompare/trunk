@@ -66,6 +66,12 @@ class LasOpenDialog : public QDialog
 	void filterOutNotChecked(std::vector<LasScalarField>&      scalarFields,
 	                         std::vector<LasExtraScalarField>& extraScalarFields);
 
+	/// handle COPC tab visibility
+	void displayCopcTab(bool visibilityState);
+
+	/// set informations to fill the copc tab
+	void setCopcInformations(const std::vector<uint64_t>& level_point_count, const LasDetails::UnscaledExtent& copcBB);
+
 	/// Returns the array of extra scalar fields to be used as normals
 	std::array<LasExtraScalarField, 3> getExtraFieldsToBeLoadedAsNormals(const std::vector<LasExtraScalarField>& extraScalarFields) const;
 
@@ -92,9 +98,19 @@ class LasOpenDialog : public QDialog
 	/// Only valid when the action is Tiling
 	LasTilingOptions tilingOptions() const;
 
+	/// Return the status of the extent defined in the COPC tab
+	bool hasUsableExtent() const;
+
+	/// Returns COPC max level :)
+	uint32_t copcMaxLevel() const;
+
+	/// Returns the current extent defined in the COPC tab
+	LasDetails::UnscaledExtent copcExtent() const;
+
 	void resetShouldSkipDialog();
 
 	bool shouldSkipDialog() const;
+
 
   private:
 	bool isChecked(const LasScalarField& lasScalarField) const;
@@ -114,9 +130,12 @@ class LasOpenDialog : public QDialog
 
 	void decomposeClassificationFields(bool decompose, bool autoUpdateCheckSate);
 
+	void checkExtentConsistency(double);
+
 	/// Hides or un-hides the checkboxes that corresponds to the flag fields
 	void onDecomposeClassificationToggled(bool state);
 
   private:
 	bool m_shouldSkipDialog{false};
+	bool m_validExtent{false};
 };
