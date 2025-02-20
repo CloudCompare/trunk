@@ -76,7 +76,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(PointXYZTpl<double>,
 									(double, x, x)
 									(double, y, y)
 									(double, z, z) )
-	
+
 static size_t GetNumberOfPoints(const PCLCloud& pclCloud)
 {
 	return static_cast<size_t>(pclCloud.width) * pclCloud.height;
@@ -211,7 +211,7 @@ bool pcl2cc::CopyNormals(const PCLCloud& pclCloud, ccPointCloud& ccCloud)
 	}
 
 	ccCloud.showNormals(true);
-	
+
 	return true;
 }
 
@@ -374,6 +374,32 @@ bool pcl2cc::CopyScalarField(	const PCLCloud& pclCloud,
 	case PCLScalarField::INT32:
 	{
 		pcl::PointCloud<IntScalar> pclScalar;
+		FROM_PCL_CLOUD(pclCloud, pclScalar);
+
+		for (unsigned i = 0; i < pointCount; ++i)
+		{
+			ScalarType scalar = static_cast<ScalarType>(pclScalar.points[i].S5c4laR);
+			newSF->addElement(scalar);
+		}
+	}
+	break;
+
+	case PCLScalarField::UINT64:
+	{
+		pcl::PointCloud<UInt64Scalar> pclScalar;
+		FROM_PCL_CLOUD(pclCloud, pclScalar);
+
+		for (unsigned i = 0; i < pointCount; ++i)
+		{
+			ScalarType scalar = static_cast<ScalarType>(pclScalar.points[i].S5c4laR);
+			newSF->addElement(scalar);
+		}
+	}
+	break;
+
+	case PCLScalarField::INT64:
+	{
+		pcl::PointCloud<Int64Scalar> pclScalar;
 		FROM_PCL_CLOUD(pclCloud, pclScalar);
 
 		for (unsigned i = 0; i < pointCount; ++i)
