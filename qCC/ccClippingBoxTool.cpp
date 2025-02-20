@@ -401,7 +401,7 @@ void ccClippingBoxTool::removeLastContour()
 	removeLastContourToolButton->setEnabled(false);
 }
 
-ccHObject* GetSlice(ccHObject* obj, ccClipBox* clipBox, bool silent)
+ccHObject* GetSlice(ccHObject* obj, ccClipBox* clipBox, bool silent, bool inside)
 {
 	assert(clipBox);
 	if (!obj)
@@ -427,8 +427,8 @@ ccHObject* GetSlice(ccHObject* obj, ccClipBox* clipBox, bool silent)
 			}
 			return nullptr;
 		}
-		clipBox->flagPointsInside(inputCloud, &selectionTable);
-		
+		clipBox->flagPoints(inputCloud, &selectionTable, false, inside);
+
 		ccGenericPointCloud* sliceCloud = inputCloud->createNewCloudFromVisibilitySelection(false, &selectionTable, nullptr, true);
 
 		// specific case: all points were selected
@@ -488,7 +488,7 @@ void ccClippingBoxTool::exportSlice()
 			continue;
 		}
 
-		ccHObject* result = GetSlice(obj, m_clipBox, false);
+		ccHObject* result = GetSlice(obj, m_clipBox, false, !invertSelectionButton->isChecked());
 
 		if (result)
 		{
@@ -633,7 +633,7 @@ bool ccClippingBoxTool::ExtractSlicesAndContours
 			outputSlices.reserve(clouds.size());
 			for (size_t ci = 0; ci != clouds.size(); ++ci)
 			{
-				ccHObject* slice = GetSlice(clouds[ci], &clipBox, false);
+				ccHObject* slice = GetSlice(clouds[ci], &clipBox, false, false);
 				if (slice)
 				{
 					slice->setName(clouds[ci]->getName() + QString(".slice"));

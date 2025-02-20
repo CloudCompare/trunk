@@ -106,10 +106,12 @@ public:
 	/** \param cloud point cloud
 		\param visTable visibility flags
 		\param shrink Whether the box is shrinking (faster) or not
+		\param inside If true, keep the point the box, if false, keep the point outside the box.
 	**/
-	void flagPointsInside(	ccGenericPointCloud* cloud,
-							ccGenericPointCloud::VisibilityTableType* visTable,
-							bool shrink = false) const;
+	void flagPoints(ccGenericPointCloud *cloud,
+			ccGenericPointCloud::VisibilityTableType *visTable,
+			bool shrink = false,
+			bool inside = true) const;
 
 	//! Resets box
 	void reset();
